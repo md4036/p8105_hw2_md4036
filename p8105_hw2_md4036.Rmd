@@ -127,7 +127,7 @@ print(trash_wheel_combined)
 ```
 
 ### Data Description
-This combined data set contains `r nrow (trash_wheel_combined)` rows and `r ncol (trash_wheel_combined)` columns. The total weight of the trash collected by Professor Trash Wheel is `r sum(Professor_Trash_Data$weight_tons)` tons. The total number of sports balls collected by Mr.Trash Wheel in 2020 is `r sum(Mr_Trash_data$sports_balls)` sports balls. In order to merge `Mr_Trash_data` and `Professor_Trash_Data` a "new" column was added. 
+This combined data set contains `r nrow (trash_wheel_combined)` rows and `r ncol (trash_wheel_combined)` columns. The total weight of the trash collected by Professor Trash Wheel is `r sum(Professor_Trash_Data$weight_tons)` tons. The total number of sports balls collected by Mr.Trash Wheel in 2020 is `r sum(Mr_Trash_data$sports_balls)` sports balls. In order to merge `Mr_Trash_data` and `Professor_Trash_Data` a "new" column was added. The combined dataset includes variables new, dumpster, month, year, date, weight_tons, volume_cubic_yards, plastic_bottles, polystrene, cigarette_butts, glass_bottles, grocery_bags, chip_bags, sports_balls and home_powered.
 
 
 ### Problem 3
