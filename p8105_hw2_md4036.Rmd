@@ -1,0 +1,201 @@
+---
+title: "p8105_hw2_md4036"
+author: "Margaret"
+date: "2022-10-07"
+output: github_document
+---
+
+## Problem 0
+
+This solution focuses on a reproducible report containing code and text necessary for Problems 1-3, and is organized as an R Project. This was not prepared as a GitHub repo; examples for repository structure and git commits should be familiar from other elements of the course.
+
+Throughout, we use appropriate text to describe our code and results, and use clear styling to ensure code is readable. 
+
+```{r load_libraries}
+library(tidyverse)
+library(readxl)
+library (dplyr)
+```
+
+
+### Problem 1
+
+Below we import and clean data from `NYC_Transit_Subway_Entrance_And_Exit_Data.csv`. The process begins with data import, updates variable names, and selects the columns that will be used in later parts fo this problem. We update `entry` from `yes` / `no` to a logical variable. As part of data import, we specify that `Route` columns 8-11 should be character for consistency with 1-7.
+
+```{r}
+trans_ent = 
+  read_csv(
+    "./hw2data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+    col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>% 
+  janitor::clean_names() %>% 
+  select(
+    line, station_name, station_latitude, station_longitude, 
+    starts_with("route"), entry, exit_only, vending, entrance_type, 
+    ada) %>% 
+  mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
+```
+
+As it stands, these data are not "tidy": route number should be a variable, as should route. That is, to obtain a tidy dataset we would need to convert `route` variables from wide to long format. This will be useful when focusing on specific routes, but may not be necessary when considering questions that focus on station-level variables. 
+
+The following code chunk selects station name and line, and then uses `distinct()` to obtain all unique combinations. As a result, the number of rows in this dataset is the number of unique stations.
+
+```{r}
+trans_ent %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+The next code chunk is similar, but filters according to ADA compliance as an initial step. This produces a dataframe in which the number of rows is the number of ADA compliant stations. 
+
+```{r}
+trans_ent %>% 
+  filter(ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+To compute the proportion of station entrances / exits without vending allow entrance, we first exclude station entrances that do not allow vending. Then, we focus on the `entry` variable -- this logical, so taking the mean will produce the desired proportion (recall that R will coerce logical to numeric in cases like this).
+
+```{r}
+trans_ent %>% 
+  filter(vending == "NO") %>% 
+  pull(entry) %>% 
+  mean
+```
+
+Lastly, we write a code chunk to identify stations that serve the A train, and to assess how many of these are ADA compliant. As a first step, we tidy the data as alluded to previously; that is, we convert `route` from wide to long format. After this step, we can use tools from previous parts of the question (filtering to focus on the A train, and on ADA compliance; selecting and using `distinct` to obtain dataframes with the required stations in rows).
+
+```{r}
+trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A") %>% 
+  select(station_name, line) %>% 
+  distinct
+
+trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A", ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+### Problem 2
+
+Below we import the `Trash-Wheel-Collection-Totals-7-2020-2.xlsx`. The process begins with data import. 
+
+```{r library download}
+library(dplyr)
+```
+
+
+```{r Mr.Trash Data}
+Mr_Trash_data =
+  read_excel ("./hw2data/Trash Wheel Collection Data.xlsx", sheet = "Mr. Trash Wheel", range = "A2:N550") %>%
+  janitor::clean_names() %>%
+  drop_na(dumpster) %>%
+  mutate(sports_balls = as.integer(round(sports_balls))) %>%
+  mutate(new = 1, .before = dumpster)%>%
+  mutate(year=as.numeric(year))
+
+Mr_Trash_data
+
+```
+
+```{r Professor Trash}
+Professor_Trash_Data = 
+  read_excel ("./hw2data/Trash Wheel Collection Data.xlsx", sheet = "Professor Trash Wheel", range = "A2:M97") %>%
+  janitor::clean_names()%>%
+  drop_na (dumpster)%>%
+  mutate (new = 1, .before = dumpster) 
+
+view(Professor_Trash_Data)
+```
+
+##now we combine Mr.Trash Wheel Data and Professor Trash Wheel Data
+```{r}
+trash_wheel_combined = 
+  bind_rows (Mr_Trash_data, Professor_Trash_Data)
+
+view (trash_wheel_combined)
+print(trash_wheel_combined)
+```
+
+### Data Description
+This combined data set contains `r nrow (trash_wheel_combined)` rows and `r ncol (trash_wheel_combined)` columns. The total weight of the trash collected by Professor Trash Wheel is `r sum(Professor_Trash_Data$weight_tons)` tons. The total number of sports balls collected by Mr.Trash Wheel in 2020 is `r sum(Mr_Trash_data$sports_balls)` sports balls. In order to merge `Mr_Trash_data` and `Professor_Trash_Data` a "new" column was added. 
+
+
+### Problem 3
+
+Below we import the `pols-month.csv`, `unemployment.csv`, and `snp.csv`. The process begins with data import. 
+```{r}
+polls_month_data =
+  read_csv("./hw2data/pols-month.csv")  %>%
+  janitor::clean_names()%>%
+  separate(col= "mon", into = c("year","month","day"),sep = "-")%>%
+  mutate(
+    year = as.integer(year),
+    month = as.integer(month),
+    day = as.integer(day)) %>%
+  mutate(month = recode (month, "1"= "January", "2"="February", "3" = "March", "4"="April", "5"= "May", "6"= "June", "7"="July", "8"="August", "9"="September","10"= "October", "11"="November", "12"="December"), 
+  president = recode (prez_gop, `0` ="dem", `1` ="gop", `2` ="gop"))%>%
+  select(-prez_dem, -prez_gop, -day)
+  
+print(polls_month_data)
+```
+
+```{r}
+unemployment_data = 
+  read.csv("./hw2data/unemployment.csv")%>%
+  janitor::clean_names()%>%
+  pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to = "unemployment_percent")%>%
+  mutate(month = recode (month, "jan"= "January", "feb"="February", "mar" = "March", "apr"="April", "may"= "May", "jun"= "June", "jul"="July", "aug"="August", "sep"="September","oct"= "October", "nov"="November", "dec"="December"))
+
+print(unemployment_data)
+  
+```
+
+```{r}
+snp_data =
+  read.csv("./hw2data/snp.csv") %>%
+  janitor::clean_names() %>%
+  separate(col = "date", into = c("month","day","year"), sep = "/") %>%
+  select(-day)%>%
+  select(year, month, everything())%>%
+  mutate(year = as.integer(year),
+  month = recode(month, `1`= "January", `2`="February", `3` = "March", `4`="April", `5`= "May", `6`= "June", `7`="July", `8`="August", `9`="September",`10`= "October", `11`="November", `12`="December"))
+
+print(head(snp_data))
+
+```
+
+## Now we join the datasets together
+```{r}
+combine_polls_snp =
+  left_join(polls_month_data, snp_data)
+
+print(combine_polls_snp)
+
+final3_combine =
+  left_join(combine_polls_snp, unemployment_data)
+
+print(final3_combine)
+  
+```
+###Data Description
+The `polls_month_data`contained `r nrow(polls_month_data)` rows and `r ncol(polls_month_data)` columns. The variables include year,month, gov_gop, sen_gop, rep_gop, gov_dem, sen_dem, rep_dem, and president. The "president" column is made through combining the "prez_gop" and "prez_dem". The years of this dataset range from `r min(polls_month_data$year)` to `r max(polls_month_data$year)`.
+
+The `snp_data` contained `r nrow(snp_data)` rows and `r ncol(snp_data)` columns. The variables in include year and month of the observation of the S&P index and closing values of the S&P stock index on the associated year and month. The variable "day" was removed. The years of this dataset range from `r min(snp_data$year)` to `r max(snp_data$year)`. Additionally, the "year" was recoded from numbers to characters.
+
+The `unemployment_data` contained `r nrow(unemployment_data)` rows and `r ncol(unemployment_data)` columns. The variables include year, month,and unemployment percents. The years of this dataset range from `r min(unemployment_data$year)` to `r max(unemployment_data$year)`. 
+
+These three datasets were then combined and created a dataset with `r nrow(final3_combine)` rows and `r ncol(final3_combine)` columns. The variables combined to include a data set with year, month, gov_gop, sen_gop, rep_gop,gov_dem, sen_dem, rep_dem, president, close, and unemployment percents. The "close" variable is`NA` because when it was merged, none of the data matched up. Additionally the "unemployment_percent" variable only had a few match up while the rest were indicated as `NA`. The years of this dataset range from `r min(final3_combine$year)` to `r max(final3_combine$year)`.
+
